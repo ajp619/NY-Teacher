@@ -1,0 +1,63 @@
+---
+title: "EDA ny_teacher"
+author: "Aaron Palumbo"
+date: "Sunday, May 24, 2015"
+output: pdf_document
+---
+
+```{r}
+# set working directory
+wd <- strsplit(getwd(), '/')[[1]]
+if(wd[length(wd)] != 'code'){
+  setwd(file.path('.', 'code'))
+}
+  
+library(rpart)
+```
+
+```{r}
+consolidated_data <- read.csv('../data/consolidated_data.csv')
+
+exclude_cols <- c('X', 'AVG_TEACHER_RATING', 'AVG_TEST_LEVEL',
+                  'SCHOOL_NAME', 'STREET', 'DISTRICT_NAME', 
+                  'CSO_NAME', 'CITY', 'TESTED')
+col_filter <- !(names(consolidated_data) %in% exclude_cols)
+
+filtered_cols <- consolidated_data[ , col_filter]
+
+tree <- rpart(FORCED_CLUSTER ~ ., data=filtered_cols)
+plotcp(tree)
+ptree <- prune(tree, cp = 0.25)
+plot(ptree, margin = .2)
+text(ptree, use.n = T)
+```
+
+The split is on GRADE_RANGE
+
+```{r}
+teacher.rating   <- consolidated_data$AVG_TEACHER_RATING
+test.performance <- consolidated_data$AVG_TEST_LEVEL
+
+c <- rep('red', length(ptree$y))
+c[ptree$y == 1] <- 'blue'
+
+plot(teacher.rating, test.performance, pch=19, col = c)
+
+```
+
+What makes up the blue group?
+
+```{r}
+f <- ptree$y == 1
+
+unique(consolidated_data$GRADE_RANGE[f])
+```
+
+What makes up the red group?
+
+```{r}
+f <- ptree$y == 0
+
+unique(consolidated_data$GRADE_RANGE[f])
+```
+
