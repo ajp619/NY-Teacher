@@ -30,6 +30,9 @@ plotcp(tree)
 ptree <- prune(tree, cp = 0.25)
 plot(ptree, margin = .2)
 text(ptree, use.n = T)
+
+results <- predict(ptree, filtered_cols)
+results <- as.integer(results >= 0.5)
 ```
 
 The split is on GRADE_RANGE
@@ -38,8 +41,8 @@ The split is on GRADE_RANGE
 teacher.rating   <- consolidated_data$AVG_TEACHER_RATING
 test.performance <- consolidated_data$AVG_TEST_LEVEL
 
-c <- rep('red', length(ptree$y))
-c[ptree$y == 1] <- 'blue'
+c <- rep('red', length(results))
+c[results == 1] <- 'blue'
 
 plot(teacher.rating, test.performance, pch=19, col = c)
 
@@ -48,7 +51,7 @@ plot(teacher.rating, test.performance, pch=19, col = c)
 What makes up the blue group?
 
 ```{r}
-f <- ptree$y == 1
+f <- results == 1
 
 unique(consolidated_data$GRADE_RANGE[f])
 ```
@@ -56,8 +59,12 @@ unique(consolidated_data$GRADE_RANGE[f])
 What makes up the red group?
 
 ```{r}
-f <- ptree$y == 0
+f <- results == 0
 
 unique(consolidated_data$GRADE_RANGE[f])
+```
+
+```{r}
+
 ```
 
