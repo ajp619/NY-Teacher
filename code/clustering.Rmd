@@ -59,12 +59,73 @@ unique(consolidated_data$GRADE_RANGE[f])
 What makes up the red group?
 
 ```{r}
-f <- results == 0
 
-unique(consolidated_data$GRADE_RANGE[f])
+unique(consolidated_data$GRADE_RANGE[!f])
+```
+
+linear regression
+```{r}
+early_math <- consolidated_data[f, c('AVG_TEACHER_RATING', 'AVG_TEST_LEVEL')]
+later_math <- consolidated_data[!f, c('AVG_TEACHER_RATING', 'AVG_TEST_LEVEL')]
+
+lm.early <- lm(AVG_TEST_LEVEL ~ AVG_TEACHER_RATING, data=early_math)
+lm.later <- lm(AVG_TEST_LEVEL ~ AVG_TEACHER_RATING, data=later_math)
+
+plot(teacher.rating, test.performance, pch=19, col = c)
+abline(lm.early, col = 'blue')
+abline(lm.later, col = 'red')
+```
+
+Clustering with kmeans
+```{r}
+library('proxy')
+
+cols <- c("AVG_TEACHER_RATING", "AVG_TEST_LEVEL", "GRADE_RANGE", "PER_FREE_LUNCH")
+# cols <- c("AVG_TEACHER_RATING", "AVG_TEST_LEVEL", "GRADE_RANGE")
+# cols <- c("AVG_TEACHER_RATING", "AVG_TEST_LEVEL")
+cluster.data <- consolidated_data[ , cols]
+
+# create distances for grade_range
+for(i in unique(cluster.data$GRADE_RANGE)){
+  cluster.data[i] <- as.integer(cluster.data$GRADE_RANGE == i)
+}
+
+dm <- subset(cluster.data, select = -GRADE_RANGE)
+dm <- scale(as.matrix(dm))
+
+dm <- dist(dm, method = "cosine")
+
+km <- kmeans(dm, 2)
+
+cluster.data$km <- km$cluster
+
+ggplot(cluster.data) +
+  geom_point(aes(x=AVG_TEACHER_RATING, y=AVG_TEST_LEVEL, color=as.factor(km)), 
+             cex=5, alpha=.6) +
+  scale_x_continuous(limits=c(50, 100), breaks=seq(50, 100, 5)) +
+  scale_y_continuous(limits=c(0, 5), breaks=seq(0, 5, 0.5)) +
+  xlab("Test One") + 
+  ylab("Test Two") +
+  ggtitle("Generated Data") +
+  theme_bw() + theme(legend.position="none")
+
+cluster.data$GRADE_RANGE[cluster.data$km == 1]
+cluster.data$GRADE_RANGE[cluster.data$km == 2]
 ```
 
 ```{r}
+df <- data.frame(x=rnorm(10), y=rnorm(10), g=sample(c('a', 'b', 'c'), 10, replace=T))
 
+for(i in unique(df$g)){
+  df[i] <- as.integer(df$g == i)
+}
+
+df <- subset(df, select = -g)
+head(df)
+dm <- dist(scale(df))
+
+km <- kmeans(dm, 2)
+df$cluster <- km$cluster
+df
 ```
 

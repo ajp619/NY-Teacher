@@ -1,0 +1,179 @@
+---
+title: "Random Numbers"
+author: "Aaron Palumbo"
+date: "Sunday, May 31, 2015"
+output: html_document
+---
+
+2D
+
+```{r}
+library(ggplot2)
+
+n <- 50
+rn1 <- rnorm(n)
+rn2 <- rnorm(n)
+
+rn1.factor <- 3
+rn2.factor <- 1
+
+corr1 <- rn1.factor * rn1 + rn2.factor * rn2
+corr1 <- scale(corr1)
+
+t1.m <- 0.5
+t1.sd <- 0.15
+t1 <- t1.sd * rn1 + t1.m
+
+t2.m <- 0.5
+t2.sd <- 0.15
+t2 <- corr1 * t2.sd + t2.m
+
+t.cor <- cor(t1, t2)
+
+df <- data.frame(test1=t1, test2=t2)
+
+ggplot(df) +
+  geom_point(aes(x=test1, y=test2), alpha=1) +
+  xlim(0, 1) + ylim(0, 1) +
+  scale_x_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  xlab("Test One") + 
+  ylab("Test Two") +
+  ggtitle("Generated Data") +
+  theme_bw()
+```
+
+
+Data for clustering
+
+```{r}
+gen_data <- function(center, std, mix, points){
+  rn1 <- rnorm(points)
+  rn2 <- rnorm(points)
+  
+  rn1.factor <- mix[1]
+  rn2.factor <- mix[2]
+  
+  corr1 <- rn1.factor * rn1 + rn2.factor * rn2
+  corr1 <- scale(corr1)
+  
+  t1.m <- center[1]
+  t1.sd <- std[1]
+  t1 <- t1.sd * rn1 + t1.m
+  
+  t2.m <- center[2]
+  t2.sd <- std[2]
+  t2 <- corr1 * t2.sd + t2.m
+  
+  t.cor <- cor(t1, t2)
+  
+  df <- data.frame(test1=t1, test2=t2)
+  
+  return(df)
+}
+```
+
+```{r}
+
+n <- 100
+
+c1 <- c(.8, .75)
+c2 <- c(.4, .7)
+c3 <- c(.8, .4)
+
+std1 <- c(.05, .05)
+std2 <- c(.1, .1)
+std3 <- c(.03, .01)
+
+mix1 <- c(1, 10)
+mix2 <- c(5, 1)
+mix3 <- c(2, 2)
+
+clusters <- list()
+clusters[[1]] <- list(c=c1, std=std1, mix=mix1)
+clusters[[2]] <- list(c=c2, std=std2, mix=mix2)
+clusters[[3]] <- list(c=c3, std=std3, mix=mix3)
+
+groups <- c('red', 'green', 'blue')
+
+df_list <- list()
+for(i in 1:3){
+  group.prob <- c(0.1, 0.1, 0.1)
+  
+  df <- gen_data(clusters[[i]]$c,
+                 clusters[[i]]$std, 
+                 clusters[[i]]$mix,
+                 n)
+  df['actual_grp'] <- i
+  group.prob[i] <- 0.8
+  df['grp'] <- sample(x = groups, size = n, replace = TRUE, prob = group.prob)
+  df_list[[i]] <- df
+}
+
+df <- do.call("rbind", df_list)
+
+ggplot(df) +
+  geom_point(aes(x=test1, y=test2, color=as.factor(actual_grp)), 
+             cex=5, alpha=1) +
+  scale_x_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  xlab("Test One") + 
+  ylab("Test Two") +
+  ggtitle("Generated Data") +
+  theme_bw() + theme(legend.position="none")
+
+```
+
+
+
+
+
+
+
+Kmeans
+
+```{r}
+library('proxy')
+
+# df.km <- df[c('test1', 'test2', 'grp')]
+df.km <- df[c('test1', 'test2')]
+# for(i in df.km$grp){
+#   df.km[i] <- as.integer(df.km$grp == i)
+# }
+# 
+# df.km <- subset(df.km, select=-grp)
+
+m <- as.matrix(df.km)
+m <- scale(m)
+d <- dist(m, method = "cosine")
+km <- kmeans(d, centers = 3, nstart = 25)
+df$predicted <- km$cluster
+
+ggplot(df) +
+  geom_point(aes(x=test1, y=test2, color=as.factor(predicted)), 
+             cex=5, alpha=1) +
+  scale_x_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.1)) +
+  xlab("Test One") + 
+  ylab("Test Two") +
+  ggtitle("Generated Data") +
+  theme_bw() + theme(legend.position="none")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
